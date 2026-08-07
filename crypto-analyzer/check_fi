@@ -1,0 +1,18 @@
+# اسکریپت کمکی برای بازنویسی generate_chart.py
+import os
+
+# مسیر فایل
+path = r"C:\Users\Asia Rayan\Desktop\crypto-analyzer\generate_chart.py"
+
+# بررسی وجود فایل
+print(f"فایل وجود دارد: {os.path.exists(path)}")
+print(f"اندازه فعلی: {os.path.getsize(path)} بایت")
+
+# خواندن محتوای فعلی
+with open(path, "r", encoding="utf-8") as f:
+    content = f.read()
+
+print(f"طول محتوا: {len(content)} کاراکتر")
+print("آیا backdrop-filter دارد:", "backdrop-filter" in content)
+print("آیا setMarkers دارد:", "setMarkers" in content)
+print("آیا sma_20 دارد:", "sma_20" in content)

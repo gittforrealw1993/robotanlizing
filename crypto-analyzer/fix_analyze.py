@@ -1,0 +1,99 @@
+# اسکریپت کمکی برای بازنویسی analyze.py
+content = '''# تحلیل: میانگین متحرک ساده (SMA) و سیگنال تقاطع
+import pandas as pd
+
+
+def add_sma(df: pd.DataFrame, window: int = 20) -> pd.DataFrame:
+    """افزودن ستون میانگین متحرک ساده (SMA)"""
+    df[f"sma_{window}"] = df["close"].rolling(window=window).mean()
+    return df
+
+
+def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
+    """افزودن SMAهای مختلف به داده"""
+    df = add_sma(df, window=9)
+    df = add_sma(df, window=36)
+    return df
+
+
+def add_signals(df: pd.DataFrame) -> pd.DataFrame:
+    """افزودن سیگنال خرید/فروش بر اساس تقاطع SMA9 و SMA36"""
+    df["signal"] = None
+
+    for i in range(1, len(df)):
+        prev_9 = df["sma_9"].iloc[i - 1]
+        prev_36 = df["sma_36"].iloc[i - 1]
+        curr_9 = df["sma_9"].iloc[i]
+        curr_36 = df["sma_36"].iloc[i]
+
+        if pd.isna(prev_9) or pd.isna(prev_36) or pd.isna(curr_9) or pd.isna(curr_36):
+            continue
+
+        if prev_9 <= prev_36 and curr_9 > curr_36:
+            df.at[df.index[i], "signal"] = "buy"
+        elif prev_9 >= prev_36 and curr_9 < curr_36:
+            df.at[df.index[i], "signal"] = "sell"
+
+    return df
+
+
+def analyze_symbol(df: pd.DataFrame, symbol: str) -> None:
+    """نمایش تحلیل پایه برای یک ارز"""
+    print("\\n" + "=" * 50)
+    print(f"📊 تحلیل {symbol}")
+    print("=" * 50)
+
+    latest = df["close"].iloc[-1]
+    first = df["close"].iloc[0]
+    change = ((latest - first) / first) * 100
+
+    print(f"آخرین قیمت: {latest:,.2f} USDT")
+    print(f"اولین قیمت (دوره): {first:,.2f} USDT")
+    print(f"تغییرات دوره: {change:+.2f}%")
+
+    sma9 = df["sma_9"].iloc[-1]
+    sma36 = df["sma_36"].iloc[-1]
+    print(f"SMA9: {sma9:,.2f} USDT")
+    print(f"SMA36: {sma36:,.2f} USDT")
+    if sma9 > sma36:
+        print("🟢 روند: صعودی (SMA9 بالای SMA36)")
+    else:
+        print("🔴 روند: نزولی (SMA9 پایین SMA36)")
+
+    signals = df[df["signal"].notna()]
+    if not signals.empty:
+        last_sig = signals.iloc[-1]
+        sig_type = last_sig["signal"]
+        sig_time = last_sig["timestamp"]
+        if sig_type == "buy":
+            print(f"🟢 آخرین سیگنال: خرید (تقاطع طلایی SMA9/SMA36) — {sig_time}")
+        else:
+            print(f"🔴 آخرین سیگنال: فروش (تقاطع مرگ SMA9/SMA36) — {sig_time}")
+    else:
+        print("⚪ هنوز سیگنالی ثبت نشده")
+
+    last_volume = df["volume"].iloc[-1]
+    avg_volume = df["volume"].tail(20).mean()
+    print(f"حجم آخرین کندل: {last_volume:,.0f}")
+    print(f"میانگین حجم (۲۰ کندل): {avg_volume:,.0f}")
+    if last_volume > avg_volume * 1.5:
+        print("📈 حجم بالاتر از میانگین — حرکت قوی")
+    elif last_volume < avg_volume * 0.5:
+        print("📉 حجم پایین‌تر از میانگین — حرکت ضعیف")
+    else:
+        print("⚪ حجم در حد میانگین")
+
+    print(f"بالاترین قیمت دوره: {df['high'].max():,.2f} USDT")
+    print(f"پایین‌ترین قیمت دوره: {df['low'].min():,.2f} USDT")
+
+
+def analyze_all(data: dict) -> None:
+    """تحلیل همه ارزها"""
+    for symbol, df in data.items():
+        analyze_symbol(df, symbol)
+'''
+
+with open(r"C:\Users\Asia Rayan\Desktop\crypto-analyzer\analyze.py", "w", encoding="utf-8") as f:
+    f.write(content)
+
+print("analyze.py بازنویسی شد")
